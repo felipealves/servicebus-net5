@@ -19,8 +19,14 @@ namespace ConsoleApp.ServiceBusTeste
             // Invoke Worker
             using IServiceScope serviceScope = host.Services.CreateScope();
             IServiceProvider provider = serviceScope.ServiceProvider;
-            var workerInstance = provider.GetRequiredService<Worker>();
-            await workerInstance.DoWork();
+
+            //Utilizando Microsoft.Azure.ServiceBus - Depreciado
+            //var workerInstance = provider.GetRequiredService<Worker>();
+            //await workerInstance.DoWork();
+
+            //Utilizando Azure.Messaging.ServiceBus
+            var workerMessagingInstance = provider.GetRequiredService<WorkerMessaging>();
+            await workerMessagingInstance.DoWork();
 
             //host.Run();
 
@@ -38,6 +44,7 @@ namespace ConsoleApp.ServiceBusTeste
                 .ConfigureServices(services =>
                 {
                     services.AddSingleton<Worker>();
+                    services.AddSingleton<WorkerMessaging>();
                 });
         }
     }

@@ -1,19 +1,24 @@
-﻿using ConsoleApp.ServiceBusTeste.Models;
-using Microsoft.Azure.ServiceBus;
+﻿using Azure.Messaging.ServiceBus;
+using ConsoleApp.ServiceBusTeste.Models;
 using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace ConsoleApp.ServiceBusTeste
 {
-    internal class Worker
+    internal class WorkerMessaging
     {
+        static ServiceBusClient client;
+
+        static ServiceBusSender sender;
+
         private readonly IConfiguration configuration;
 
-        public Worker(IConfiguration configuration)
+        public WorkerMessaging(IConfiguration configuration)
         {
             this.configuration = configuration;
         }
@@ -29,6 +34,8 @@ namespace ConsoleApp.ServiceBusTeste
             //Codigo chamando a fila e inserindo mensagem.
             var mensagens = Mensagem.GetMensagens();
 
+            client = new ServiceBusClient(configuration.GetConnectionString("ServiceBus"));
+
             await SendMessageAsync(mensagens, configuration.GetValue<string>("Topic:NomeTopic"));
 
             Console.WriteLine("==============================================");
@@ -37,17 +44,17 @@ namespace ConsoleApp.ServiceBusTeste
             Console.ResetColor();
         }
 
-        public async Task SendMessageAsync(List<Mensagem> mensagens, string queueName)
+        public async Task SendMessageAsync(List<Mensagem> mensagens, string queueOrTopicName)
         {
-            var topicClient = new TopicClient(configuration.GetConnectionString("ServiceBus"), queueName);
+            sender = client.CreateSender(queueOrTopicName);
 
             foreach (var item in mensagens)
             {
                 var mensagemBody = JsonSerializer.Serialize(item);
 
-                var mensagem = new Message(Encoding.UTF8.GetBytes(mensagemBody));
+                ServiceBusMessage message = new ServiceBusMessage(mensagemBody);
 
-                await topicClient.SendAsync(mensagem);
+                await sender.SendMessageAsync(message);
             }
         }
     }
